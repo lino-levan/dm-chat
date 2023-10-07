@@ -4,7 +4,7 @@ import { signal } from "@preact/signals";
 import { concat } from "$std/bytes/concat.ts";
 import { decodeBase64, encodeBase64 } from "$std/encoding/base64.ts";
 
-const name = signal(localStorage.getItem("name") ?? "Anonymous");
+const name = signal(localStorage?.getItem("name") ?? "Anonymous");
 const key = signal(null);
 const chat = signal<{ name: string; message: string }[]>([
   {
