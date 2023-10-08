@@ -4,7 +4,6 @@ import { signal } from "@preact/signals";
 import { concat } from "$std/bytes/concat.ts";
 import { decodeBase64, encodeBase64 } from "$std/encoding/base64.ts";
 
-const name = signal("Anonymous");
 const key = signal(null);
 const chat = signal<{ name: string; message: string }[]>([
   {
@@ -15,8 +14,6 @@ const chat = signal<{ name: string; message: string }[]>([
 ]);
 
 if (IS_BROWSER) {
-  name.value = localStorage.getItem("name");
-
   const source = new EventSource("/api/message");
   source.onmessage = async (e) => {
     try {
@@ -48,11 +45,11 @@ async function sendMessage(message: string) {
   if (message.startsWith("/")) {
     const [command, ...args] = message.slice(1).split(" ");
     if (command === "name") {
-      name.value = args.join(" ");
-      localStorage.setItem("name", name.value);
+      const name = args.join(" ");
+      localStorage.setItem("name", name);
       chat.value = [...chat.value, {
         name: "[SYSTEM]",
-        message: `Your name has been changed to ${name.value}`,
+        message: `Your name has been changed to ${name}`,
       }];
       return;
     } else if (command === "shrug") {
@@ -61,7 +58,7 @@ async function sendMessage(message: string) {
   }
 
   message = JSON.stringify({
-    name: name.value,
+    name: localStorage.getItem("name") ?? "Anonymous",
     message,
   });
 
