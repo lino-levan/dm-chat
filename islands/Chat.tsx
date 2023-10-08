@@ -5,13 +5,19 @@ import { concat } from "$std/bytes/concat.ts";
 import { decodeBase64, encodeBase64 } from "$std/encoding/base64.ts";
 
 const key = signal(null);
-const chat = signal<{ name: string; message: string }[]>([
+const chat = signal<
+  { name: string; color: string; message: string; sent_at: number }[]
+>([
   {
+    color: "red",
     name: "[SYSTEM]",
     message:
       'Welcome to the chat! This chat is fully E2E encrypted. They private key to get into this chat is in your clipboard. You can change your name by typing "/name <name>" in the chatbox. Have fun!',
+    sent_at: new Date().getTime(),
   },
 ]);
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
 
 if (IS_BROWSER) {
   const source = new EventSource("/api/message");
@@ -48,8 +54,20 @@ async function sendMessage(message: string) {
       const name = args.join(" ");
       localStorage.setItem("name", name);
       chat.value = [...chat.value, {
+        color: "red",
         name: "[SYSTEM]",
         message: `Your name has been changed to ${name}`,
+        sent_at: new Date().getTime(),
+      }];
+      return;
+    } else if (command === "color") {
+      const color = args.join(" ");
+      localStorage.setItem("color", color);
+      chat.value = [...chat.value, {
+        color: "red",
+        name: "[SYSTEM]",
+        message: `Your color has been changed to ${color}`,
+        sent_at: new Date().getTime(),
       }];
       return;
     } else if (command === "shrug") {
@@ -58,8 +76,10 @@ async function sendMessage(message: string) {
   }
 
   message = JSON.stringify({
+    color: localStorage.getItem("color") ?? "#3b82f6",
     name: localStorage.getItem("name") ?? "Anonymous",
     message,
+    sent_at: new Date().getTime(),
   });
 
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
@@ -136,10 +156,28 @@ export function Chat() {
   return (
     <>
       <div class="flex-grow overflow-y-scroll" id="messages">
-        {chat.value.map(({ name, message }) => {
+        {chat.value.map(({ color, name, message, sent_at }, i) => {
+          if (i > 0) {
+            const prev = chat.value[i - 1];
+            if (
+              prev.name === name && prev.color === color &&
+              sent_at - prev.sent_at < 1000 * 60 * 5
+            ) {
+              return (
+                <div class="flex flex-col w-full">
+                  <p class="text-gray-100 w-full break-words">{message}</p>
+                </div>
+              );
+            }
+          }
           return (
-            <div class="flex flex-col gap-1 p-2 w-full">
-              <p class="text-gray-400 w-full">{name}</p>
+            <div class="flex flex-col gap-1 pt-2 w-full">
+              <div class="w-full flex gap-2">
+                <span style={{ color }}>{name}</span>
+                <span class="text-gray-400">
+                  {dateFormatter.format(new Date(sent_at))}
+                </span>
+              </div>
               <p class="text-gray-100 w-full break-words">{message}</p>
             </div>
           );
