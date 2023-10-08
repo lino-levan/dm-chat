@@ -35,7 +35,7 @@ export function Chat() {
   if (!key.value) return null;
 
   return (
-    <div class="flex-grow overflow-y-scroll" id="messages">
+    <div class="flex-grow overflow-y-scroll px-2 pb-2" id="messages">
       {chat.value.map(({ color, name, message, sent_at }, i) => {
         if (i > 0) {
           const prev = chat.value[i - 1];
