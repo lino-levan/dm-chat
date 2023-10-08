@@ -24,6 +24,7 @@
     ]
   },
   "imports": {
+    "@/": "./",
     "$fresh/": "https://deno.land/x/fresh@1.4.3/",
     "preact": "https://esm.sh/preact@10.15.1",
     "preact/": "https://esm.sh/preact@10.15.1/",

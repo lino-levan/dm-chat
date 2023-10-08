@@ -7,6 +7,8 @@ import * as $1 from "./routes/_app.tsx";
 import * as $2 from "./routes/api/message.ts";
 import * as $3 from "./routes/index.tsx";
 import * as $$0 from "./islands/Chat.tsx";
+import * as $$1 from "./islands/Chatbox.tsx";
+import * as $$2 from "./islands/Login.tsx";
 
 const manifest = {
   routes: {
@@ -17,6 +19,8 @@ const manifest = {
   },
   islands: {
     "./islands/Chat.tsx": $$0,
+    "./islands/Chatbox.tsx": $$1,
+    "./islands/Login.tsx": $$2,
   },
   baseUrl: import.meta.url,
 };
