@@ -1,6 +1,7 @@
 import { decodeBase64 } from "$std/encoding/base64.ts";
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { chat, key } from "@/lib/signals.ts";
+import type { Message } from "../lib/types.ts";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
 
@@ -36,18 +37,29 @@ export function Chat() {
 
   return (
     <div class="flex-grow overflow-y-scroll px-2 pb-2" id="messages">
-      {chat.value.map(({ color, name, message, sent_at }, i) => {
+      {chat.value.map((message: Message, i) => {
+        const { name, color, sent_at } = message;
         if (i > 0) {
           const prev = chat.value[i - 1];
           if (
             prev.name === name && prev.color === color &&
             sent_at - prev.sent_at < 1000 * 60 * 5
           ) {
-            return (
-              <div class="flex flex-col w-full">
-                <p class="text-gray-100 w-full break-words">{message}</p>
-              </div>
-            );
+            if (message.type === "message") {
+              return (
+                <div class="flex flex-col w-full">
+                  <p class="text-gray-100 w-full break-words">
+                    {message.message}
+                  </p>
+                </div>
+              );
+            } else if (message.type === "image") {
+              return (
+                <div class="flex flex-col w-full">
+                  <img src={message.image} class="w-full max-w-screen-sm" />
+                </div>
+              );
+            }
           }
         }
         return (
@@ -58,7 +70,13 @@ export function Chat() {
                 {dateFormatter.format(new Date(sent_at))}
               </span>
             </div>
-            <p class="text-gray-100 w-full break-words">{message}</p>
+            {message.type === "message"
+              ? (
+                <p class="text-gray-100 w-full break-words">
+                  {message.message}
+                </p>
+              )
+              : <img src={message.image} class="w-full max-w-screen-sm" />}
           </div>
         );
       })}
