@@ -36,6 +36,9 @@ async function encryptAndSend(contents: string) {
 }
 
 async function sendMessage(message: string) {
+  message = message.trim();
+  if (message.length === 0) return;
+
   if (message.startsWith("/")) {
     const [command, ...args] = message.slice(1).split(" ");
     if (command === "name") {
