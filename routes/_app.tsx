@@ -9,7 +9,7 @@ export default function App({ Component }: AppProps) {
         <title>DM</title>
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body class="bg-black w-screen h-screen flex flex-col p-2 text-white">
+      <body class="bg-gray-900 w-screen h-screen">
         <Component />
       </body>
     </html>

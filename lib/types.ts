@@ -1,15 +1,26 @@
-export type BaseMessage = {
+export interface Channel {
+  id: string;
+  name: string;
+  key: CryptoKey;
+}
+
+export interface Attachment {
+  type: string;
+  url: string;
+}
+
+export interface Message {
+  id: string;
   color: string;
   name: string;
-  sent_at: number;
-};
+  content: string;
+  attachments: Attachment[];
+}
 
-export type Message =
-  & BaseMessage
-  & ({
-    type: "message";
-    message: string;
-  } | {
-    type: "image";
-    image: string;
-  });
+export type GatewayEvent = {
+  type: "message";
+  buffer: Uint8Array;
+} | {
+  type: "channel";
+  buffer: Uint8Array;
+};

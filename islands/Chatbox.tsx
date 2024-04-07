@@ -1,136 +1,128 @@
-import IconSend from "icons/send.tsx";
 import IconPlus from "icons/plus.tsx";
-import { concat } from "$std/bytes/concat.ts";
-import { encodeBase64 } from "$std/encoding/base64.ts";
-import { chat, key } from "@/lib/signals.ts";
-import type { BaseMessage, Message } from "../lib/types.ts";
+import { ulid } from "$std/ulid/mod.ts";
+import { activeChannel, channels, chat } from "@/lib/signals.ts";
+import type { Attachment, Message } from "../lib/types.ts";
+import { encryptData } from "@/lib/crypto.ts";
+import { useSignal } from "@preact/signals";
 
-function getBaseMessage(): BaseMessage {
+function getBaseMessage() {
   return {
     color: localStorage.getItem("color") ?? "#3b82f6",
     name: localStorage.getItem("name") ?? "Anonymous",
-    sent_at: new Date().getTime(),
   };
 }
 
-async function encryptAndSend(contents: string) {
-  if (!key) return;
+async function encryptAndSend(content: string, attachments: Attachment[]) {
+  if (!activeChannel.value) return;
+  const channel = channels.value.find((channel) =>
+    channel.id === activeChannel.value
+  )!;
 
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
-
-  const encrypted = new Uint8Array(
-    await window.crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: iv },
-      key.value,
-      new TextEncoder().encode(contents),
+  const id = ulid();
+  const encrypted = await encryptData(
+    channel.key,
+    JSON.stringify(
+      {
+        ...getBaseMessage(),
+        id,
+        content,
+        attachments,
+      } satisfies Message,
     ),
   );
-
-  const concatenated = concat(iv, encrypted);
-  const encoded = encodeBase64(concatenated);
-
-  await fetch("/api/message", {
+  await fetch(`/api/channel/${channel.id}/message/${id}`, {
     method: "POST",
-    body: encoded,
+    body: encrypted,
   });
 }
 
-async function sendMessage(message: string) {
-  message = message.trim();
-  if (message.length === 0) return;
-
-  if (message.startsWith("/")) {
-    const [command, ...args] = message.slice(1).split(" ");
-    if (command === "name") {
-      const name = args.join(" ");
-      localStorage.setItem("name", name);
-      chat.value = [...chat.value, {
-        color: "red",
-        name: "[SYSTEM]",
-        type: "message",
-        message: `Your name has been changed to ${name}`,
-        sent_at: new Date().getTime(),
-      }];
-      return;
-    } else if (command === "color") {
-      const color = args.join(" ");
-      localStorage.setItem("color", color);
-      chat.value = [...chat.value, {
-        color: "red",
-        name: "[SYSTEM]",
-        type: "message",
-        message: `Your color has been changed to ${color}`,
-        sent_at: new Date().getTime(),
-      }];
-      return;
-    } else if (command === "shrug") {
-      message = `¯\\_(ツ)_/¯ ${args.join(" ")}`;
+async function sendMessage(content: string, attachments: Attachment[]) {
+  content = content.trim();
+  if (content.length === 0 && attachments.length === 0) return;
+  if (content.startsWith("/")) {
+    const [command, ...args] = content.slice(1).split(" ");
+    if (command === "shrug") {
+      content = `¯\\_(ツ)_/¯ ${args.join(" ")}`;
     }
   }
 
-  message = JSON.stringify(
-    {
-      ...getBaseMessage(),
-      type: "message",
-      message,
-    } satisfies Message,
-  );
-
-  await encryptAndSend(message);
+  await encryptAndSend(content, attachments);
 }
 
 export function Chatbox() {
-  if (!key.value) return null;
+  const attachments = useSignal<{
+    display: string;
+    attachment: Attachment;
+  }[]>([]);
 
   return (
-    <>
+    <div class="p-2">
+      <div class="flex gap-2">
+        {attachments.value.map((attachment) => (
+          <img
+            src={attachment.display}
+            class="h-48 rounded-lg"
+          />
+        ))}
+      </div>
       <div class="w-full bg-gray-800 rounded py-2 px-2 flex items-center gap-2">
-        <label for="file-upload" class="hover:cursor-pointer">
+        <label
+          for="file-upload"
+          class="hover:cursor-pointer text-gray-300 hover:text-white"
+        >
           <IconPlus />
         </label>
         <input
           id="file-upload"
           type="file"
           class="hidden"
+          disabled={!activeChannel.value}
           onChange={(e) => {
-            const file: File = e.currentTarget.files[0];
-            const reader = new FileReader();
-            reader.addEventListener("load", (e) => {
-              const result = e.target!.result as string;
-              const message = JSON.stringify(
+            const files = e.currentTarget.files;
+            if (!files) return;
+            Array.from(files).forEach(async (file) => {
+              const buffer = await file.arrayBuffer();
+              attachments.value = [
+                ...attachments.value,
                 {
-                  ...getBaseMessage(),
-                  type: "image",
-                  image: result,
-                } satisfies Message,
-              );
-              encryptAndSend(message);
+                  display: `data:${file.type};base64,${
+                    btoa(
+                      new Uint8Array(buffer).reduce(
+                        (data, byte) => data + String.fromCharCode(byte),
+                        "",
+                      ),
+                    )
+                  }`,
+                  attachment: {
+                    type: file.type,
+                    url: "demo",
+                  },
+                },
+              ];
             });
-            reader.readAsDataURL(file);
           }}
         />
         <input
           id="chatbox"
-          class="bg-gray-800 outline-none flex-grow"
-          placeholder="Send a direct message"
+          class="bg-gray-800 outline-none flex-grow text-white"
+          placeholder={activeChannel.value
+            ? "Send a direct message"
+            : "Select a channel to send a message..."}
+          autocomplete="off"
+          disabled={!activeChannel.value}
           onKeyUp={(e) => {
             if (e.key === "Enter") {
-              const chatbox = document.getElementById("chatbox");
-              sendMessage(chatbox.value);
+              const chatbox = e.currentTarget;
+              sendMessage(
+                chatbox.value,
+                attachments.value.map((a) => a.attachment),
+              );
+              attachments.value = [];
               chatbox.value = "";
             }
           }}
         />
-        <button
-          onClick={() => {
-            const chatbox = document.getElementById("chatbox");
-            sendMessage(chatbox.value);
-            chatbox.value = "";
-          }}
-        >
-          <IconSend />
-        </button>
       </div>
-    </>
+    </div>
   );
 }
