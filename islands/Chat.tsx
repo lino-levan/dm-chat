@@ -110,7 +110,7 @@ export function Chat() {
 
   return (
     <div class="flex-grow overflow-y-scroll pb-2" id="messages">
-      <h1 class="text-white text-5xl px-2 pb-2 font-extrabold">
+      <h1 class="text-white text-5xl px-2 pb-2 pt-4 font-extrabold">
         {channels.value.find((channel) => channel.id === activeChannel.value)
           ?.name}
       </h1>
