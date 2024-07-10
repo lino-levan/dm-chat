@@ -37,6 +37,13 @@ export async function setMessageBuffer(
   await kv.set(["messages", channelId, messageId], buffer);
 }
 
+export async function deleteMessageBuffer(
+  channelId: string,
+  messageId: string,
+) {
+  await kv.delete(["messages", channelId, messageId]);
+}
+
 export async function getChannelSubscriptions(channelId: string) {
   const iter = kv.list<string>({
     prefix: ["subscriptions", channelId],

@@ -23,4 +23,7 @@ export type GatewayEvent = {
 } | {
   type: "channel";
   buffer: Uint8Array;
+} | {
+  type: "delete";
+  messageId: string;
 };

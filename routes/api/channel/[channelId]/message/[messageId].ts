@@ -1,5 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import {
+  deleteMessageBuffer,
   getChannelSubscriptions,
   getMessageBuffer,
   setMessageBuffer,
@@ -25,6 +26,12 @@ export const handler: Handlers = {
     setMessageBuffer(channelId, messageId, buffer);
     emitEvent(channelId, { type: "message", buffer });
     notifySubscribers(channelId);
+    return new Response();
+  },
+  async DELETE(req, ctx) {
+    const { channelId, messageId } = ctx.params;
+    deleteMessageBuffer(channelId, messageId);
+    emitEvent(channelId, { type: "delete", messageId });
     return new Response();
   },
 };
