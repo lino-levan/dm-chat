@@ -1,4 +1,6 @@
 /// <reference lib="deno.unstable" />
+import { hashData } from "./crypto.ts";
+
 const kv = await Deno.openKv();
 
 export async function getChannelBuffer(channelId: string) {
@@ -15,7 +17,7 @@ export async function getLastMessages(channelId: string, from?: string) {
     prefix: ["messages", channelId],
     start: from ? ["messages", channelId, from] : undefined,
   }, { reverse: true });
-  const messages = [];
+  const messages: Uint8Array[] = [];
   for await (const { value } of iter) {
     messages.push(value);
   }
@@ -33,4 +35,23 @@ export async function setMessageBuffer(
   buffer: Uint8Array,
 ) {
   await kv.set(["messages", channelId, messageId], buffer);
+}
+
+export async function getChannelSubscriptions(channelId: string) {
+  const iter = kv.list<string>({
+    prefix: ["subscriptions", channelId],
+  });
+  const subscriptions: string[] = [];
+  for await (const { value } of iter) {
+    subscriptions.push(value);
+  }
+  return subscriptions;
+}
+
+export async function setChannelSubscription(
+  channelId: string,
+  subscription: string,
+) {
+  const id = await hashData(subscription);
+  await kv.set(["subscriptions", channelId, id], subscription);
 }

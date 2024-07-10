@@ -31,6 +31,14 @@ async function create(name: string) {
       key: cryptoKey,
     },
   ];
+
+  const subscription = localStorage.getItem("subscription");
+  if (subscription) {
+    await fetch(`/api/channel/${channelId}/subscribe`, {
+      method: "POST",
+      body: subscription,
+    });
+  }
 }
 
 export function Create({ open }: SidebarMenuProps) {

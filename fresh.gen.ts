@@ -9,6 +9,7 @@ import * as $api_channel_channelId_gateway from "./routes/api/channel/[channelId
 import * as $api_channel_channelId_index from "./routes/api/channel/[channelId]/index.ts";
 import * as $api_channel_channelId_message_messageId_ from "./routes/api/channel/[channelId]/message/[messageId].ts";
 import * as $api_channel_channelId_messages from "./routes/api/channel/[channelId]/messages.ts";
+import * as $api_channel_channelId_subscribe from "./routes/api/channel/[channelId]/subscribe.ts";
 import * as $index from "./routes/index.tsx";
 import * as $Chat from "./islands/Chat.tsx";
 import * as $Chatbox from "./islands/Chatbox.tsx";
@@ -32,6 +33,8 @@ const manifest = {
       $api_channel_channelId_message_messageId_,
     "./routes/api/channel/[channelId]/messages.ts":
       $api_channel_channelId_messages,
+    "./routes/api/channel/[channelId]/subscribe.ts":
+      $api_channel_channelId_subscribe,
     "./routes/index.tsx": $index,
   },
   islands: {

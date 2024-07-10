@@ -27,6 +27,14 @@ async function join(code: string) {
     },
   ];
   activeChannel.value = channelId;
+
+  const subscription = localStorage.getItem("subscription");
+  if (subscription) {
+    await fetch(`/api/channel/${channelId}/subscribe`, {
+      method: "POST",
+      body: subscription,
+    });
+  }
 }
 
 export function Join({ open }: SidebarMenuProps) {

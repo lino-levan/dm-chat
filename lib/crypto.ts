@@ -69,3 +69,13 @@ export async function decryptDataAsJson(key: CryptoKey, data: Uint8Array) {
   const decrypted = await decryptData(key, data);
   return JSON.parse(new TextDecoder().decode(decrypted));
 }
+
+export async function hashData(data: string) {
+  const msgUint8 = new TextEncoder().encode(data);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return hashHex;
+}

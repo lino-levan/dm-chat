@@ -1,6 +1,18 @@
 import { Handlers } from "$fresh/server.ts";
-import { getMessageBuffer, setMessageBuffer } from "@/lib/kv.ts";
+import {
+  getChannelSubscriptions,
+  getMessageBuffer,
+  setMessageBuffer,
+} from "@/lib/kv.ts";
+import { sendNotification } from "@/lib/notification.ts";
 import { emitEvent } from "@/routes/api/channel/[channelId]/gateway.ts";
+
+async function notifySubscribers(channelId: string) {
+  const subscriptions = await getChannelSubscriptions(channelId);
+  for (const subscription of subscriptions) {
+    sendNotification(subscription);
+  }
+}
 
 export const handler: Handlers = {
   async GET(_, ctx) {
@@ -12,6 +24,7 @@ export const handler: Handlers = {
     const buffer = new Uint8Array(await req.arrayBuffer());
     setMessageBuffer(channelId, messageId, buffer);
     emitEvent(channelId, { type: "message", buffer });
+    notifySubscribers(channelId);
     return new Response();
   },
 };

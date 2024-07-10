@@ -1,4 +1,4 @@
-import { decodeTime } from "$std/ulid/mod.ts";
+import { decodeTime, ulid } from "$std/ulid/mod.ts";
 import { activeChannel, channels, chat } from "@/lib/signals.ts";
 import type { GatewayEvent, Message } from "../lib/types.ts";
 import { useEffect } from "preact/hooks";
@@ -35,17 +35,6 @@ export function Chat() {
             const messages = document.getElementById("messages")!;
             messages.scrollTop = messages.scrollHeight;
           }, 0);
-
-          console.log(document.hidden);
-          if (document.hidden) {
-            console.log("hii");
-            new Notification(message.name, {
-              body: message.content,
-              icon: `https://api.dicebear.com/8.x/initials/svg?seed=${
-                encodeURIComponent(message.name)
-              }`,
-            });
-          }
         }
         // TODO(lino-levan): handle other event types
       };
@@ -64,9 +53,23 @@ export function Chat() {
         .then((res) => decode(new Uint8Array(res)) as Uint8Array[])
         .then((res) =>
           Promise.all(
-            res.map((encrypted: Uint8Array) =>
-              decryptDataAsJson(channel.key, encrypted) as Promise<Message>
-            ),
+            res.map(async (encrypted: Uint8Array) => {
+              try {
+                return await decryptDataAsJson(
+                  channel.key,
+                  encrypted,
+                ) as Promise<Message>;
+              } catch {
+                // error decrypting message
+                return {
+                  id: ulid(),
+                  name: "[decryption error]",
+                  color: "red",
+                  content: "[decryption error]",
+                  attachments: [],
+                };
+              }
+            }),
           )
         )
         .then((res) => {
