@@ -1,6 +1,6 @@
 import { Chat } from "@/islands/Chat.tsx";
 import { Chatbox } from "@/islands/Chatbox.tsx";
-import { Sidebar } from "@/islands/Sidebar.tsx";
+import { Sidebar } from "@/islands/Sidebar/Sidebar.tsx";
 
 export default function Home() {
   return (

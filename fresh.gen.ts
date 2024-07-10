@@ -12,7 +12,11 @@ import * as $api_channel_channelId_messages from "./routes/api/channel/[channelI
 import * as $index from "./routes/index.tsx";
 import * as $Chat from "./islands/Chat.tsx";
 import * as $Chatbox from "./islands/Chatbox.tsx";
-import * as $Sidebar from "./islands/Sidebar.tsx";
+import * as $Sidebar_Create from "./islands/Sidebar/Create.tsx";
+import * as $Sidebar_Join from "./islands/Sidebar/Join.tsx";
+import * as $Sidebar_Main from "./islands/Sidebar/Main.tsx";
+import * as $Sidebar_Settings from "./islands/Sidebar/Settings.tsx";
+import * as $Sidebar_Sidebar from "./islands/Sidebar/Sidebar.tsx";
 import { type Manifest } from "$fresh/server.ts";
 
 const manifest = {
@@ -32,7 +36,11 @@ const manifest = {
   islands: {
     "./islands/Chat.tsx": $Chat,
     "./islands/Chatbox.tsx": $Chatbox,
-    "./islands/Sidebar.tsx": $Sidebar,
+    "./islands/Sidebar/Create.tsx": $Sidebar_Create,
+    "./islands/Sidebar/Join.tsx": $Sidebar_Join,
+    "./islands/Sidebar/Main.tsx": $Sidebar_Main,
+    "./islands/Sidebar/Settings.tsx": $Sidebar_Settings,
+    "./islands/Sidebar/Sidebar.tsx": $Sidebar_Sidebar,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;
