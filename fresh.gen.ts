@@ -17,6 +17,7 @@ import * as $Sidebar_Join from "./islands/Sidebar/Join.tsx";
 import * as $Sidebar_Main from "./islands/Sidebar/Main.tsx";
 import * as $Sidebar_Settings from "./islands/Sidebar/Settings.tsx";
 import * as $Sidebar_Sidebar from "./islands/Sidebar/Sidebar.tsx";
+import * as $Topbar from "./islands/Topbar.tsx";
 import { type Manifest } from "$fresh/server.ts";
 
 const manifest = {
@@ -41,6 +42,7 @@ const manifest = {
     "./islands/Sidebar/Main.tsx": $Sidebar_Main,
     "./islands/Sidebar/Settings.tsx": $Sidebar_Settings,
     "./islands/Sidebar/Sidebar.tsx": $Sidebar_Sidebar,
+    "./islands/Topbar.tsx": $Topbar,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;

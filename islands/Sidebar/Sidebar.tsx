@@ -16,7 +16,11 @@ export interface SidebarMenuProps {
   open: Signal<string | null>;
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  pushKey: string;
+}
+
+export function Sidebar({ pushKey }: SidebarProps) {
   const open = useSignal<string | null>(null);
 
   useEffect(() => {
@@ -55,7 +59,9 @@ export function Sidebar() {
             {open.value === "main" && <Main open={open} />}
             {open.value === "create" && <Create open={open} />}
             {open.value === "join" && <Join open={open} />}
-            {open.value === "settings" && <Settings open={open} />}
+            {open.value === "settings" && (
+              <Settings open={open} pushKey={pushKey} />
+            )}
           </div>
         </div>
       )}

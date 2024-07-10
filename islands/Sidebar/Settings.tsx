@@ -1,6 +1,21 @@
+import { useSignal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
 import type { SidebarMenuProps } from "./Sidebar.tsx";
 
-export function Settings({ open }: SidebarMenuProps) {
+type SettingsProps = SidebarMenuProps & {
+  pushKey: string;
+};
+
+export function Settings({ pushKey }: SettingsProps) {
+  const swReg = useSignal<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    navigator.serviceWorker.register("/sw.js")
+      .then((reg) => {
+        swReg.value = reg;
+      });
+  }, []);
+
   return (
     <>
       <h1 class="font-bold text-3xl pb-4">Settings</h1>
@@ -31,20 +46,9 @@ export function Settings({ open }: SidebarMenuProps) {
         Notifications
       </p>
       <button
-        class="w-full bg-gray-700 p-2 rounded my-2"
-        onClick={() => {
-          const config = {
-            pushKey:
-              "BP_ILq2IIMHbagsa-wgfhK9c89qGFy_0oWl1orNlcIBHe1Ot2RnuGPizM8N85pBcxJF-6b_em8oYSe_1Q-6gEAs",
-          };
-          async function subscribe(topic: string) {
-            const swReg = await navigator.serviceWorker.register("/sw.js");
-            const subscription = await swReg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlB64ToUint8Array(config.pushKey),
-            });
-            console.log(JSON.stringify(subscription));
-          }
+        class="w-full bg-gray-700 disabled:text-gray-400 p-2 rounded my-2"
+        disabled={swReg.value === null}
+        onClick={async () => {
           function urlB64ToUint8Array(base64String: string) {
             const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
             const base64 = (base64String + padding)
@@ -59,7 +63,11 @@ export function Settings({ open }: SidebarMenuProps) {
             }
             return outputArray;
           }
-          subscribe("news");
+          const subscription = await swReg.value!.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlB64ToUint8Array(pushKey),
+          });
+          console.log(JSON.stringify(subscription));
         }}
       >
         Enable Notifications
