@@ -1,10 +1,13 @@
 import webpush from "web-push";
 
-webpush.setVapidDetails(
-  Deno.env.get("VAPID_CONTACT")!,
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
-);
+// Set VAPID keys if not in CI
+if (!Deno.env.get("CI")) {
+  webpush.setVapidDetails(
+    Deno.env.get("VAPID_CONTACT")!,
+    Deno.env.get("VAPID_PUBLIC_KEY")!,
+    Deno.env.get("VAPID_PRIVATE_KEY")!,
+  );
+}
 
 /** Silently fails if unable to */
 export async function sendNotification(subscription: string) {
