@@ -24,14 +24,14 @@ export const handler: Handlers = {
     const { channelId, messageId } = ctx.params;
     const buffer = new Uint8Array(await req.arrayBuffer());
     setMessageBuffer(channelId, messageId, buffer);
-    emitEvent(channelId, { type: "message", buffer });
+    emitEvent(channelId, { type: "message_modify", buffer });
     notifySubscribers(channelId);
     return new Response();
   },
   async DELETE(req, ctx) {
     const { channelId, messageId } = ctx.params;
     deleteMessageBuffer(channelId, messageId);
-    emitEvent(channelId, { type: "delete", messageId });
+    emitEvent(channelId, { type: "message_delete", messageId });
     return new Response();
   },
 };

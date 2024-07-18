@@ -1,5 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import { getChannelBuffer, setChannelBuffer } from "@/lib/kv.ts";
+import { emitEvent } from "./gateway.ts";
 
 export const handler: Handlers = {
   async GET(_, ctx) {
@@ -8,7 +9,9 @@ export const handler: Handlers = {
   },
   async POST(req, ctx) {
     const { channelId } = ctx.params;
-    setChannelBuffer(channelId, new Uint8Array(await req.arrayBuffer()));
+    const buffer = new Uint8Array(await req.arrayBuffer());
+    setChannelBuffer(channelId, buffer);
+    emitEvent(channelId, { type: "channel_modify", buffer });
     return new Response();
   },
 };

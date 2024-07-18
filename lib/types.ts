@@ -18,12 +18,12 @@ export interface Message {
 }
 
 export type GatewayEvent = {
-  type: "message";
+  type: "message_modify";
   buffer: Uint8Array;
 } | {
-  type: "channel";
+  type: "channel_modify";
   buffer: Uint8Array;
 } | {
-  type: "delete";
+  type: "message_delete";
   messageId: string;
 };

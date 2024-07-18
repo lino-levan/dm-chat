@@ -2,7 +2,7 @@ import IconTrash from "icons/trash.tsx";
 import IconEdit from "icons/edit.tsx";
 import { decodeTime, ulid } from "$std/ulid/mod.ts";
 import { activeChannel, channels, chat } from "@/lib/signals.ts";
-import type { GatewayEvent, Message } from "../lib/types.ts";
+import type { Channel, GatewayEvent, Message } from "../lib/types.ts";
 import { useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { decode } from "$std/msgpack/mod.ts";
@@ -49,7 +49,7 @@ export function Chat() {
       ws.onmessage = async (e) => {
         const data = new Uint8Array(await e.data.arrayBuffer());
         const event = decode(data) as GatewayEvent;
-        if (event.type === "message") {
+        if (event.type === "message_modify") {
           const message: Message = await decryptDataAsJson(
             channel.key,
             event.buffer,
@@ -59,8 +59,15 @@ export function Chat() {
             const messages = document.getElementById("messages")!;
             messages.scrollTop = messages.scrollHeight;
           }, 0);
-        } else if (event.type === "delete") {
+        } else if (event.type === "message_delete") {
           chat.value = chat.value.filter((msg) => msg.id !== event.messageId);
+        } else if (event.type === "channel_modify") {
+          const message: Channel = await decryptDataAsJson(
+            channel.key,
+            event.buffer,
+          );
+          channel.name = message.name;
+          channels.value = [...channels.value];
         }
         // TODO(lino-levan): handle other event types
       };
