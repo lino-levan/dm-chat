@@ -4,6 +4,7 @@ import { activeChannel, channels, chat } from "@/lib/signals.ts";
 import type { Attachment, Message } from "../lib/types.ts";
 import { encryptData } from "@/lib/crypto.ts";
 import { useSignal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
 
 function getBaseMessage() {
   return {
@@ -54,6 +55,30 @@ export function Chatbox() {
     display: string;
     attachment: Attachment;
   }[]>([]);
+
+  // if user types elsewhere on the page, focus the chatbox and replay the event
+  useEffect(() => {
+    const keyboardEventHandler = (e: KeyboardEvent) => {
+      if (e.target === document.body) {
+        const chatbox = document.getElementById("chatbox")!;
+        chatbox.focus();
+        chatbox.dispatchEvent(
+          new KeyboardEvent(e.type, {
+            charCode: e.charCode,
+            code: e.code,
+            isComposing: e.isComposing,
+            key: e.key,
+            keyCode: e.keyCode,
+            location: e.location,
+            repeat: e.repeat,
+          }),
+        );
+      }
+    };
+    document.addEventListener("keyup", keyboardEventHandler);
+    document.addEventListener("keydown", keyboardEventHandler);
+    document.addEventListener("keypress", keyboardEventHandler);
+  }, []);
 
   return (
     <div class="p-2">
