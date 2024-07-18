@@ -28,6 +28,14 @@ export const handler: Handlers = {
     notifySubscribers(channelId);
     return new Response();
   },
+  // Same as POST but no notification
+  async PATCH(req, ctx) {
+    const { channelId, messageId } = ctx.params;
+    const buffer = new Uint8Array(await req.arrayBuffer());
+    setMessageBuffer(channelId, messageId, buffer);
+    emitEvent(channelId, { type: "message_modify", buffer });
+    return new Response();
+  },
   async DELETE(req, ctx) {
     const { channelId, messageId } = ctx.params;
     deleteMessageBuffer(channelId, messageId);

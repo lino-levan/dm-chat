@@ -9,17 +9,24 @@ import type {
   Message,
 } from "../lib/types.ts";
 import { useEffect } from "preact/hooks";
-import { useSignal } from "@preact/signals";
+import { type Signal, useSignal } from "@preact/signals";
 import { decode } from "$std/msgpack/mod.ts";
-import { decryptDataAsJson } from "@/lib/crypto.ts";
+import { decryptDataAsJson, encryptData } from "@/lib/crypto.ts";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
 
-function ChatMessageTooltip({ id }: { id: string }) {
+function ChatMessageTooltip(
+  { id, editing }: { id: string; editing: Signal<string | null> },
+) {
   return (
     <div class="w-full absolute">
       <div class="absolute h-8 right-0 bottom-0 bg-gray-700 z-40 text-white hidden group-hover:flex items-center rounded shadow-sm ">
-        <button class="hover:bg-gray-600 p-2 rounded-l">
+        <button
+          onClick={() => {
+            editing.value = id;
+          }}
+          class="hover:bg-gray-600 p-2 rounded-l"
+        >
           <IconEdit class="w-4 h-4" />
         </button>
         <button
@@ -57,10 +64,60 @@ function ChatMessageAttachments(
   );
 }
 
+function ChatMessageContent(
+  { message, editing }: { message: Message; editing: Signal<string | null> },
+) {
+  const editingContent = useSignal(message.content);
+  if (!message.content) return null;
+
+  return editing.value === message.id
+    ? (
+      <input
+        class="text-gray-100 bg-gray-700 w-full p-2 rounded"
+        value={editingContent}
+        onBlur={() => {
+          editing.value = null;
+        }}
+        onKeyPress={async (e) => {
+          if (e.key === "Enter") {
+            const channel = channels.value.find((channel) =>
+              channel.id === activeChannel.value
+            )!;
+
+            const encrypted = await encryptData(
+              channel.key,
+              JSON.stringify(
+                {
+                  ...message,
+                  content: editingContent.value,
+                } satisfies Message,
+              ),
+            );
+            await fetch(`/api/channel/${channel.id}/message/${message.id}`, {
+              method: "PATCH",
+              body: encrypted,
+            });
+            editing.value = null;
+          }
+        }}
+        onInput={(e) => {
+          editingContent.value = e.currentTarget.value;
+        }}
+      />
+    )
+    : (
+      <p class="text-gray-100 w-full break-words">
+        {message.content}
+      </p>
+    );
+}
+
 export function Chat() {
+  const editingMessage = useSignal<string | null>(null);
   const wsSignal = useSignal<null | WebSocket>(null);
 
   useEffect(() => {
+    editingMessage.value = null;
     const channel = channels.value.find((channel) =>
       channel.id === activeChannel.value
     )!;
@@ -79,6 +136,13 @@ export function Chat() {
             channel.key,
             event.buffer,
           );
+          for (let i = 0; i < chat.value.length; i++) {
+            if (chat.value[i].id === message.id) {
+              chat.value[i] = message;
+              chat.value = [...chat.value];
+              return;
+            }
+          }
           chat.value = [...chat.value, message];
           setTimeout(() => {
             const messages = document.getElementById("messages")!;
@@ -170,12 +234,14 @@ export function Chat() {
             return (
               <div class="group pl-16 px-2 w-full hover:bg-gray-800">
                 <div class="flex flex-col relative">
-                  <ChatMessageTooltip id={message.id} />
-                  {message.content && (
-                    <p class="text-gray-100 w-full break-words">
-                      {message.content}
-                    </p>
-                  )}
+                  <ChatMessageTooltip
+                    id={message.id}
+                    editing={editingMessage}
+                  />
+                  <ChatMessageContent
+                    message={message}
+                    editing={editingMessage}
+                  />
                   <ChatMessageAttachments attachments={message.attachments} />
                 </div>
               </div>
@@ -191,18 +257,14 @@ export function Chat() {
               class="w-10 h-10 rounded-full"
             />
             <div class="flex flex-col gap-0 w-full flex-grow relative">
-              <ChatMessageTooltip id={message.id} />
+              <ChatMessageTooltip id={message.id} editing={editingMessage} />
               <div class="w-full flex gap-2">
                 <span style={{ color }}>{name}</span>
                 <span class="text-gray-400">
                   {dateFormatter.format(new Date(decodeTime(id)))}
                 </span>
               </div>
-              {message.content && (
-                <p class="text-gray-100 w-full break-words">
-                  {message.content}
-                </p>
-              )}
+              <ChatMessageContent message={message} editing={editingMessage} />
               <ChatMessageAttachments attachments={message.attachments} />
             </div>
           </div>
