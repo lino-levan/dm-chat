@@ -72,7 +72,8 @@ export function Chat() {
 
     if (activeChannel.value) {
       // Create listener
-      wsSignal.value = createWebsocket();
+      const ws = createWebsocket();
+      wsSignal.value = ws;
       // Fetch chat
       fetch(`/api/channel/${activeChannel.value}/messages`)
         .then((res) => res.arrayBuffer())
@@ -105,6 +106,10 @@ export function Chat() {
             messages.scrollTop = messages.scrollHeight;
           }, 0);
         });
+
+      return () => {
+        ws.close();
+      };
     }
   }, [activeChannel.value]);
 
