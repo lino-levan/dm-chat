@@ -2,7 +2,12 @@ import IconTrash from "icons/trash.tsx";
 import IconEdit from "icons/edit.tsx";
 import { decodeTime, ulid } from "$std/ulid/mod.ts";
 import { activeChannel, channels, chat } from "@/lib/signals.ts";
-import type { Channel, GatewayEvent, Message } from "../lib/types.ts";
+import type {
+  Attachment,
+  Channel,
+  GatewayEvent,
+  Message,
+} from "../lib/types.ts";
 import { useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { decode } from "$std/msgpack/mod.ts";
@@ -29,6 +34,26 @@ function ChatMessageTooltip({ id }: { id: string }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function ChatMessageAttachments(
+  { attachments }: { attachments: Attachment[] },
+) {
+  return (
+    <>
+      {attachments.map((attachment) => {
+        if (["image/png", "image/jpeg"].includes(attachment.type)) {
+          return (
+            <img
+              src={attachment.url}
+              class="w-full max-w-screen-sm"
+            />
+          );
+        }
+        return null;
+      })}
+    </>
   );
 }
 
@@ -151,17 +176,7 @@ export function Chat() {
                       {message.content}
                     </p>
                   )}
-                  {message.attachments.map((attachment) => {
-                    if (["image/png", "image/jpeg"].includes(attachment.type)) {
-                      return (
-                        <img
-                          src={attachment.url}
-                          class="w-full max-w-screen-sm"
-                        />
-                      );
-                    }
-                    return null;
-                  })}
+                  <ChatMessageAttachments attachments={message.attachments} />
                 </div>
               </div>
             );
@@ -188,14 +203,7 @@ export function Chat() {
                   {message.content}
                 </p>
               )}
-              {message.attachments.map((attachment) => {
-                if (attachment.type === "image") {
-                  return (
-                    <img src={attachment.url} class="w-full max-w-screen-sm" />
-                  );
-                }
-                return null;
-              })}
+              <ChatMessageAttachments attachments={message.attachments} />
             </div>
           </div>
         );
