@@ -103,16 +103,27 @@ export function Chatbox() {
           class="hidden"
           disabled={!activeChannel.value}
           onChange={(e) => {
+            const channel = channels.value.find((channel) =>
+              channel.id === activeChannel.value
+            )!;
+
             const files = e.currentTarget.files;
             if (!files) return;
-            Array.from(files).forEach(async (file) => {
-              const buffer = await file.arrayBuffer();
+            Array.from(files).forEach(async (file: File) => {
+              const buffer = new Uint8Array(await file.arrayBuffer());
+
+              // upload encrypted file to CDN
+              const encrypted = await encryptData(channel.key, buffer);
+              const url = await (await fetch("/api/cdn/upload", {
+                method: "PUT",
+                body: encrypted,
+              })).text();
               attachments.value = [
                 ...attachments.value,
                 {
                   display: `data:${file.type};base64,${
                     btoa(
-                      new Uint8Array(buffer).reduce(
+                      buffer.reduce(
                         (data, byte) => data + String.fromCharCode(byte),
                         "",
                       ),
@@ -120,7 +131,7 @@ export function Chatbox() {
                   }`,
                   attachment: {
                     type: file.type,
-                    url: "demo",
+                    url,
                   },
                 },
               ];

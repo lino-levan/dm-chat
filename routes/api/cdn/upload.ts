@@ -12,13 +12,18 @@ const client = new S3Client({
 });
 
 export const handler: Handlers = {
-  // Generate s3 signed url
-  async GET() {
+  async PUT(req) {
+    const id = ulid();
     const command = new PutObjectCommand({
       Bucket: Deno.env.get("AWS_BUCKET")!,
-      Key: ulid(),
+      Key: id,
+      Body: await req.arrayBuffer(),
     });
-    const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
-    return new Response(signedUrl);
+    const response = await client.send(command);
+    return new Response(
+      `https://${Deno.env.get("AWS_BUCKET")!}.s3.${Deno.env.get(
+        "AWS_REGION",
+      )!}.amazonaws.com/${id}`,
+    );
   },
 };

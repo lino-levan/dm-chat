@@ -12,8 +12,11 @@ import { useEffect } from "preact/hooks";
 import { type Signal, useSignal } from "@preact/signals";
 import { decode } from "$std/msgpack/mod.ts";
 import { decryptDataAsJson, encryptData } from "@/lib/crypto.ts";
+import { decryptData } from "../lib/crypto.ts";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
+
+const media: Record<string, string> = {};
 
 function ChatMessageTooltip(
   { id, editing }: { id: string; editing: Signal<string | null> },
@@ -47,14 +50,34 @@ function ChatMessageTooltip(
 function ChatMessageAttachments(
   { attachments }: { attachments: Attachment[] },
 ) {
+  const channel = channels.value.find((channel) =>
+    channel.id === activeChannel.value
+  )!;
+  const loading = useSignal(true);
+  useEffect(() => {
+    attachments.forEach(async (attachment) => {
+      if (attachment.type === "image/png" || attachment.type === "image/jpeg") {
+        const res = await fetch(attachment.url);
+        const encrypted = new Uint8Array(await res.arrayBuffer());
+        const decrypted = await decryptData(channel.key, encrypted);
+        const url = URL.createObjectURL(
+          new Blob([decrypted], {
+            type: attachment.type,
+          }),
+        );
+        media[attachment.url] = url;
+        loading.value = false;
+      }
+    });
+  }, [attachments]);
   return (
     <>
-      {attachments.map((attachment) => {
+      {!loading.value && attachments.map((attachment) => {
         if (["image/png", "image/jpeg"].includes(attachment.type)) {
           return (
             <img
-              src={attachment.url}
-              class="w-full max-w-screen-sm"
+              src={media[attachment.url]}
+              class="max-w-96"
             />
           );
         }
