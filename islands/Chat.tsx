@@ -86,7 +86,7 @@ function ChatMessageAttachments(
           return (
             <img
               src={media[attachment.url]}
-              class="max-w-96"
+              class="max-w-48 md:max-w-96"
             />
           );
         }
@@ -96,7 +96,11 @@ function ChatMessageAttachments(
           )
         ) {
           return (
-            <video controls src={media[attachment.url]} class="max-w-96" />
+            <video
+              controls
+              src={media[attachment.url]}
+              class="max-w-48 md:max-w-96"
+            />
           );
         }
         if (
@@ -105,12 +109,16 @@ function ChatMessageAttachments(
           )
         ) {
           return (
-            <audio controls src={media[attachment.url]} class="max-w-96" />
+            <audio
+              controls
+              src={media[attachment.url]}
+              class="max-w-48 md:max-w-96"
+            />
           );
         }
         return (
           <a
-            class="bg-gray-700 p-4 rounded-lg text-blue-500 w-max hover:underline"
+            class="bg-gray-700 p-4 rounded-lg text-blue-500 md:w-max hover:underline"
             download={media[attachment.url]}
             href={media[attachment.url]}
           >

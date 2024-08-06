@@ -4,6 +4,7 @@ import { type Signal, useSignal } from "@preact/signals";
 import { activeChannel, channels } from "@/lib/signals.ts";
 import { decryptDataAsJson, getCryptoKeyFromString } from "@/lib/crypto.ts";
 import { getChannelId } from "@/lib/crypto.ts";
+import SwipeEvent from "@/lib/touch.ts";
 import { useEffect } from "preact/hooks";
 import { getInitials } from "@/lib/initials.ts";
 
@@ -21,9 +22,26 @@ interface SidebarProps {
 }
 
 export function Sidebar({ pushKey }: SidebarProps) {
+  const hidden = useSignal<boolean>(false);
   const open = useSignal<string | null>(null);
 
   useEffect(() => {
+    if (window.innerWidth < window.innerHeight) {
+      let swipeEvent: SwipeEvent | null = null;
+      document.addEventListener("touchstart", (event) => {
+        swipeEvent = new SwipeEvent(event);
+      });
+      document.addEventListener("touchend", (event) => {
+        if (!swipeEvent) return;
+        swipeEvent.setEndEvent(event);
+        if (swipeEvent.isSwipeRight()) {
+          hidden.value = false;
+        } else if (swipeEvent.isSwipeLeft()) {
+          hidden.value = true;
+        }
+        swipeEvent = null;
+      });
+    }
     const dms = JSON.parse(localStorage.getItem("dms") || "[]") as string[];
     Promise.all(dms.map(async (code) => {
       const cryptoKey = await getCryptoKeyFromString(code);
@@ -43,6 +61,10 @@ export function Sidebar({ pushKey }: SidebarProps) {
       activeChannel.value = channels.value[0]?.id;
     });
   }, []);
+
+  if (hidden.value === true) {
+    return null;
+  }
 
   return (
     <>
