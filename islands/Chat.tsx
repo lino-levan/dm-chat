@@ -56,24 +56,33 @@ function ChatMessageAttachments(
   const loading = useSignal(true);
   useEffect(() => {
     attachments.forEach(async (attachment) => {
-      if (attachment.type === "image/png" || attachment.type === "image/jpeg") {
-        const res = await fetch(attachment.url);
-        const encrypted = new Uint8Array(await res.arrayBuffer());
-        const decrypted = await decryptData(channel.key, encrypted);
-        const url = URL.createObjectURL(
-          new Blob([decrypted], {
-            type: attachment.type,
-          }),
-        );
-        media[attachment.url] = url;
+      // Don't double load the same image
+      if (media[attachment.url]) {
         loading.value = false;
+        return;
       }
+
+      // Load the attachment
+      const res = await fetch(attachment.url);
+      const encrypted = new Uint8Array(await res.arrayBuffer());
+      const decrypted = await decryptData(channel.key, encrypted);
+      const url = URL.createObjectURL(
+        new Blob([decrypted], {
+          type: attachment.type,
+        }),
+      );
+      media[attachment.url] = url;
+      loading.value = false;
     });
   }, [attachments]);
   return (
     <>
       {!loading.value && attachments.map((attachment) => {
-        if (["image/png", "image/jpeg"].includes(attachment.type)) {
+        if (
+          ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(
+            attachment.type,
+          )
+        ) {
           return (
             <img
               src={media[attachment.url]}
@@ -81,7 +90,34 @@ function ChatMessageAttachments(
             />
           );
         }
-        return null;
+        if (
+          ["video/mp4", "video/quicktime", "video/webm"].includes(
+            attachment.type,
+          )
+        ) {
+          return (
+            <video controls src={media[attachment.url]} class="max-w-96" />
+          );
+        }
+        if (
+          ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav"].includes(
+            attachment.type,
+          )
+        ) {
+          return (
+            <audio controls src={media[attachment.url]} class="max-w-96" />
+          );
+        }
+        return (
+          <a
+            class="bg-gray-700 p-4 rounded-lg text-blue-500 w-max hover:underline"
+            download={media[attachment.url]}
+            href={media[attachment.url]}
+          >
+            Cannot show preview for file with type "{attachment.type}". Click to
+            download.
+          </a>
+        );
       })}
     </>
   );

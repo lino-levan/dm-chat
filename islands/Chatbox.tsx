@@ -52,13 +52,14 @@ async function sendMessage(content: string, attachments: Attachment[]) {
 
 export function Chatbox() {
   const attachments = useSignal<{
-    display: string;
+    data: string;
     attachment: Attachment;
   }[]>([]);
 
   // if user types elsewhere on the page, focus the chatbox and replay the event
   useEffect(() => {
     const keyboardEventHandler = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) return;
       if (e.target === document.body) {
         const chatbox = document.getElementById("chatbox")!;
         chatbox.focus();
@@ -83,12 +84,25 @@ export function Chatbox() {
   return (
     <div class="p-2">
       <div class="flex gap-2">
-        {attachments.value.map((attachment) => (
-          <img
-            src={attachment.display}
-            class="h-48 rounded-lg"
-          />
-        ))}
+        {attachments.value.map((attachment) => {
+          if (
+            ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(
+              attachment.attachment.type,
+            )
+          ) {
+            return (
+              <img
+                src={attachment.data}
+                class="h-48 rounded-lg mb-2"
+              />
+            );
+          }
+          return (
+            <div class="h-48 w-48 rounded-lg text-white bg-gray-800 mb-2 text-center flex items-center">
+              {`Can't display preview of file with mime type ${attachment.attachment.type}`}
+            </div>
+          );
+        })}
       </div>
       <div class="w-full bg-gray-800 rounded py-2 px-2 flex items-center gap-2">
         <label
@@ -121,7 +135,7 @@ export function Chatbox() {
               attachments.value = [
                 ...attachments.value,
                 {
-                  display: `data:${file.type};base64,${
+                  data: `data:${file.type};base64,${
                     btoa(
                       buffer.reduce(
                         (data, byte) => data + String.fromCharCode(byte),
