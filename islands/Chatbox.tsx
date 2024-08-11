@@ -56,6 +56,39 @@ export function Chatbox() {
     attachment: Attachment;
   }[]>([]);
 
+  function uploadFiles(files: FileList) {
+    const channel = channels.value.find((channel) =>
+      channel.id === activeChannel.value
+    )!;
+    Array.from(files).forEach(async (file: File) => {
+      const buffer = new Uint8Array(await file.arrayBuffer());
+
+      // upload encrypted file to CDN
+      const encrypted = await encryptData(channel.key, buffer);
+      const url = await (await fetch("/api/cdn/upload", {
+        method: "PUT",
+        body: encrypted,
+      })).text();
+      attachments.value = [
+        ...attachments.value,
+        {
+          data: `data:${file.type};base64,${
+            btoa(
+              buffer.reduce(
+                (data, byte) => data + String.fromCharCode(byte),
+                "",
+              ),
+            )
+          }`,
+          attachment: {
+            type: file.type,
+            url,
+          },
+        },
+      ];
+    });
+  }
+
   // if user types elsewhere on the page, focus the chatbox and replay the event
   useEffect(() => {
     const keyboardEventHandler = (e: KeyboardEvent) => {
@@ -79,6 +112,12 @@ export function Chatbox() {
     document.addEventListener("keyup", keyboardEventHandler);
     document.addEventListener("keydown", keyboardEventHandler);
     document.addEventListener("keypress", keyboardEventHandler);
+    document.addEventListener("paste", (e) => {
+      const fileList = e.clipboardData?.files;
+      if (fileList && fileList.length > 0) {
+        uploadFiles(fileList);
+      }
+    });
   }, []);
 
   return (
@@ -117,39 +156,9 @@ export function Chatbox() {
           class="hidden"
           disabled={!activeChannel.value}
           onChange={(e) => {
-            const channel = channels.value.find((channel) =>
-              channel.id === activeChannel.value
-            )!;
-
             const files = e.currentTarget.files;
             if (!files) return;
-            Array.from(files).forEach(async (file: File) => {
-              const buffer = new Uint8Array(await file.arrayBuffer());
-
-              // upload encrypted file to CDN
-              const encrypted = await encryptData(channel.key, buffer);
-              const url = await (await fetch("/api/cdn/upload", {
-                method: "PUT",
-                body: encrypted,
-              })).text();
-              attachments.value = [
-                ...attachments.value,
-                {
-                  data: `data:${file.type};base64,${
-                    btoa(
-                      buffer.reduce(
-                        (data, byte) => data + String.fromCharCode(byte),
-                        "",
-                      ),
-                    )
-                  }`,
-                  attachment: {
-                    type: file.type,
-                    url,
-                  },
-                },
-              ];
-            });
+            uploadFiles(files);
           }}
         />
         <input
