@@ -7,16 +7,33 @@ import type {
   Channel,
   GatewayEvent,
   Message,
-} from "../lib/types.ts";
+} from "@/lib/types.ts";
 import { useEffect } from "preact/hooks";
 import { type Signal, useSignal } from "@preact/signals";
 import { decode } from "$std/msgpack/mod.ts";
-import { decryptDataAsJson, encryptData } from "@/lib/crypto.ts";
-import { decryptData } from "../lib/crypto.ts";
+import { decryptDataAsJson, encryptData, decryptData } from "@/lib/crypto.ts";
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
+const timeFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
+const dateFormatter = new Intl.DateTimeFormat("en-US", { 
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
 
 const media: Record<string, string> = {};
+
+function DateSeparator({ date }: { date: Date }) {
+  return (
+    <div class="flex items-center my-4">
+      <div class="flex-grow h-px bg-gray-700"></div>
+      <div class="px-4 text-sm text-gray-400">
+        {dateFormatter.format(date)}
+      </div>
+      <div class="flex-grow h-px bg-gray-700"></div>
+    </div>
+  );
+}
 
 function ChatMessageTooltip(
   { id, editing }: { id: string; editing: Signal<string | null> },
@@ -292,49 +309,63 @@ export function Chat() {
       </p>
       {chat.value.map((message: Message, i) => {
         const { name, color, id } = message;
-        if (i > 0) {
-          const prev = chat.value[i - 1];
-          if (
-            prev.name === name && prev.color === color &&
-            decodeTime(id) - decodeTime(prev.id) < 1000 * 60 * 5
-          ) {
-            return (
-              <div class="group pl-16 px-2 w-full hover:bg-gray-800">
-                <div class="flex flex-col relative">
-                  <ChatMessageTooltip
-                    id={message.id}
-                    editing={editingMessage}
-                  />
-                  <ChatMessageContent
-                    message={message}
-                    editing={editingMessage}
-                  />
-                  <ChatMessageAttachments attachments={message.attachments} />
-                </div>
-              </div>
-            );
-          }
-        }
-        return (
-          <div class="flex-grow flex gap-4 pt-1 mt-1 px-2 hover:bg-gray-800 group">
-            <img
-              src={`https://api.dicebear.com/8.x/initials/svg?seed=${
-                encodeURIComponent(name)
-              }`}
-              class="w-10 h-10 rounded-full"
-            />
-            <div class="flex flex-col gap-0 w-full flex-grow relative">
-              <ChatMessageTooltip id={message.id} editing={editingMessage} />
-              <div class="w-full flex gap-2">
-                <span style={{ color }}>{name}</span>
-                <span class="text-gray-400">
-                  {dateFormatter.format(new Date(decodeTime(id)))}
-                </span>
-              </div>
-              <ChatMessageContent message={message} editing={editingMessage} />
+        const currentMessageDate = new Date(decodeTime(id));
+        const prevMessageDate = i > 0 ? new Date(decodeTime(chat.value[i - 1].id)) : null;
+        
+        const showDateSeparator = prevMessageDate && 
+          currentMessageDate.toDateString() !== prevMessageDate.toDateString();
+
+        const messageContent = (
+          <div class="group pl-16 px-2 w-full hover:bg-gray-800">
+            <div class="flex flex-col relative">
+              <ChatMessageTooltip
+                id={message.id}
+                editing={editingMessage}
+              />
+              <ChatMessageContent
+                message={message}
+                editing={editingMessage}
+              />
               <ChatMessageAttachments attachments={message.attachments} />
             </div>
           </div>
+        );
+
+        if (i > 0) {
+          const prev = chat.value[i - 1];
+          if (
+            prev.name === name && 
+            prev.color === color &&
+            decodeTime(id) - decodeTime(prev.id) < 1000 * 60 * 5 &&
+            !showDateSeparator
+          ) {
+            return messageContent;
+          }
+        }
+
+        return (
+          <>
+            {showDateSeparator && <DateSeparator date={currentMessageDate} />}
+            <div class="flex-grow flex gap-4 pt-1 mt-1 px-2 hover:bg-gray-800 group">
+              <img
+                src={`https://api.dicebear.com/8.x/initials/svg?seed=${
+                  encodeURIComponent(name)
+                }`}
+                class="w-10 h-10 rounded-full"
+              />
+              <div class="flex flex-col gap-0 w-full flex-grow relative">
+                <ChatMessageTooltip id={message.id} editing={editingMessage} />
+                <div class="w-full flex gap-2">
+                  <span style={{ color }}>{name}</span>
+                  <span class="text-gray-400">
+                    {timeFormatter.format(currentMessageDate)}
+                  </span>
+                </div>
+                <ChatMessageContent message={message} editing={editingMessage} />
+                <ChatMessageAttachments attachments={message.attachments} />
+              </div>
+            </div>
+          </>
         );
       })}
     </div>
