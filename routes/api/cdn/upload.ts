@@ -1,6 +1,5 @@
 import { Handlers } from "$fresh/server.ts";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ulid } from "$std/ulid/mod.ts";
 
 const client = new S3Client({
@@ -19,7 +18,7 @@ export const handler: Handlers = {
       Key: id,
       Body: await req.arrayBuffer(),
     });
-    const response = await client.send(command);
+    await client.send(command);
     return new Response(
       `https://${Deno.env.get("AWS_BUCKET")!}.s3.${Deno.env.get(
         "AWS_REGION",

@@ -7,4 +7,6 @@ export const activeChannel = signal<string | null>(null);
 
 export const channels = signal<Channel[]>([]);
 
+export const replyTo = signal<string | null>(null);
+
 // export const key = signal(null);

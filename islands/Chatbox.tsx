@@ -1,6 +1,7 @@
 import IconPlus from "icons/plus.tsx";
+import IconX from "icons/x.tsx";
 import { ulid } from "$std/ulid/mod.ts";
-import { activeChannel, channels, chat } from "@/lib/signals.ts";
+import { activeChannel, channels, chat, replyTo } from "@/lib/signals.ts";
 import type { Attachment, Message } from "../lib/types.ts";
 import { encryptData } from "@/lib/crypto.ts";
 import { useSignal } from "@preact/signals";
@@ -13,7 +14,11 @@ function getBaseMessage() {
   };
 }
 
-async function encryptAndSend(content: string, attachments: Attachment[]) {
+async function encryptAndSend(
+  content: string,
+  attachments: Attachment[],
+  replyTo: string | null,
+) {
   if (!activeChannel.value) return;
   const channel = channels.value.find((channel) =>
     channel.id === activeChannel.value
@@ -28,6 +33,7 @@ async function encryptAndSend(content: string, attachments: Attachment[]) {
         id,
         content,
         attachments,
+        reply_to: replyTo ?? undefined,
       } satisfies Message,
     ),
   );
@@ -37,7 +43,11 @@ async function encryptAndSend(content: string, attachments: Attachment[]) {
   });
 }
 
-async function sendMessage(content: string, attachments: Attachment[]) {
+async function sendMessage(
+  content: string,
+  attachments: Attachment[],
+  replyTo: string | null,
+) {
   content = content.trim();
   if (content.length === 0 && attachments.length === 0) return;
   if (content.startsWith("/")) {
@@ -47,7 +57,7 @@ async function sendMessage(content: string, attachments: Attachment[]) {
     }
   }
 
-  await encryptAndSend(content, attachments);
+  await encryptAndSend(content, attachments, replyTo);
 }
 
 export function Chatbox() {
@@ -93,6 +103,13 @@ export function Chatbox() {
   useEffect(() => {
     const keyboardEventHandler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) return;
+
+      if (e.key === "Escape" && replyTo.value) {
+        replyTo.value = null;
+        e.preventDefault();
+        return;
+      }
+
       if (e.target === document.body) {
         const chatbox = document.getElementById("chatbox")!;
         chatbox.focus();
@@ -120,6 +137,8 @@ export function Chatbox() {
     });
   }, []);
 
+  const replyToMessage = chat.value.find((m) => m.id === replyTo.value);
+
   return (
     <div class="p-2">
       <div class="flex gap-2">
@@ -143,6 +162,21 @@ export function Chatbox() {
           );
         })}
       </div>
+      {replyToMessage && (
+        <div class="bg-gray-800 border-b border-gray-600 rounded-t py-1 px-2 mx-8 flex justify-between items-center">
+          <p class="text-gray-300 text-sm">
+            Replying to <b>{replyToMessage.name}</b>
+          </p>
+          <button
+            class="bg-gray-300 rounded-full text-gray-900 hover:bg-gray-200 w-4 h-4 flex items-center justify-center"
+            onClick={() => {
+              replyTo.value = null;
+            }}
+          >
+            <IconX class="w-3 h-3" />
+          </button>
+        </div>
+      )}
       <div class="w-full bg-gray-800 rounded py-2 px-2 flex items-center gap-2">
         <label
           for="file-upload"
@@ -175,9 +209,11 @@ export function Chatbox() {
               sendMessage(
                 chatbox.value,
                 attachments.value.map((a) => a.attachment),
+                replyTo.value,
               );
               attachments.value = [];
               chatbox.value = "";
+              replyTo.value = null;
             }
           }}
         />

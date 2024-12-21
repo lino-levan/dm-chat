@@ -1,7 +1,8 @@
 import IconTrash from "icons/trash.tsx";
 import IconEdit from "icons/edit.tsx";
+import IconReply from "icons/corner-up-left.tsx";
 import { decodeTime, ulid } from "$std/ulid/mod.ts";
-import { activeChannel, channels, chat } from "@/lib/signals.ts";
+import { activeChannel, channels, chat, replyTo } from "@/lib/signals.ts";
 import type {
   Attachment,
   Channel,
@@ -11,14 +12,14 @@ import type {
 import { useEffect } from "preact/hooks";
 import { type Signal, useSignal } from "@preact/signals";
 import { decode } from "$std/msgpack/mod.ts";
-import { decryptDataAsJson, encryptData, decryptData } from "@/lib/crypto.ts";
+import { decryptData, decryptDataAsJson, encryptData } from "@/lib/crypto.ts";
 
 const timeFormatter = new Intl.DateTimeFormat("en-US", { timeStyle: "short" });
-const dateFormatter = new Intl.DateTimeFormat("en-US", { 
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
 });
 
 const media: Record<string, string> = {};
@@ -35,12 +36,43 @@ function DateSeparator({ date }: { date: Date }) {
   );
 }
 
+function ReplyPreview({ message }: { message: Message | undefined }) {
+  return (
+    <a
+      href={`#${message?.id}`}
+      className="flex items-center gap-2 text-sm text-gray-400 mb-1"
+    >
+      <div className="w-0.5 h-4 bg-gray-600 rounded-full" />
+      <img
+        src={`https://api.dicebear.com/8.x/initials/svg?seed=${
+          encodeURIComponent(message?.name ?? "Unknown")
+        }`}
+        className="w-4 h-4 rounded-full"
+      />
+      <span style={{ color: message?.color }}>
+        {message?.name ?? "Unable to load author"}
+      </span>
+      <span className="truncate">
+        {message?.content ?? "Unable to load message"}
+      </span>
+    </a>
+  );
+}
+
 function ChatMessageTooltip(
   { id, editing }: { id: string; editing: Signal<string | null> },
 ) {
   return (
     <div class="w-full absolute">
       <div class="absolute h-8 right-0 bottom-0 bg-gray-700 z-40 text-white hidden group-hover:flex items-center rounded shadow-sm ">
+        <button
+          onClick={() => {
+            replyTo.value = id;
+          }}
+          class="hover:bg-gray-600 p-2 rounded-l"
+        >
+          <IconReply class="w-4 h-4" />
+        </button>
         <button
           onClick={() => {
             editing.value = id;
@@ -310,9 +342,11 @@ export function Chat() {
       {chat.value.map((message: Message, i) => {
         const { name, color, id } = message;
         const currentMessageDate = new Date(decodeTime(id));
-        const prevMessageDate = i > 0 ? new Date(decodeTime(chat.value[i - 1].id)) : null;
-        
-        const showDateSeparator = prevMessageDate && 
+        const prevMessageDate = i > 0
+          ? new Date(decodeTime(chat.value[i - 1].id))
+          : null;
+
+        const showDateSeparator = prevMessageDate &&
           currentMessageDate.toDateString() !== prevMessageDate.toDateString();
 
         const messageContent = (
@@ -334,8 +368,9 @@ export function Chat() {
         if (i > 0) {
           const prev = chat.value[i - 1];
           if (
-            prev.name === name && 
+            prev.name === name &&
             prev.color === color &&
+            !message.reply_to &&
             decodeTime(id) - decodeTime(prev.id) < 1000 * 60 * 5 &&
             !showDateSeparator
           ) {
@@ -346,14 +381,26 @@ export function Chat() {
         return (
           <>
             {showDateSeparator && <DateSeparator date={currentMessageDate} />}
-            <div class="flex-grow flex gap-4 pt-1 mt-1 px-2 hover:bg-gray-800 group">
+            <div
+              class="flex-grow flex gap-4 pt-1 mt-1 px-2 hover:bg-gray-800 group"
+              id={message.id}
+            >
               <img
                 src={`https://api.dicebear.com/8.x/initials/svg?seed=${
                   encodeURIComponent(name)
                 }`}
-                class="w-10 h-10 rounded-full"
+                class={`w-10 h-10 rounded-full ${
+                  message.reply_to ? "mt-6" : ""
+                }`}
               />
               <div class="flex flex-col gap-0 w-full flex-grow relative">
+                {message.reply_to && (
+                  <ReplyPreview
+                    message={chat.value.find((msg) =>
+                      msg.id === message.reply_to
+                    )}
+                  />
+                )}
                 <ChatMessageTooltip id={message.id} editing={editingMessage} />
                 <div class="w-full flex gap-2">
                   <span style={{ color }}>{name}</span>
@@ -361,7 +408,10 @@ export function Chat() {
                     {timeFormatter.format(currentMessageDate)}
                   </span>
                 </div>
-                <ChatMessageContent message={message} editing={editingMessage} />
+                <ChatMessageContent
+                  message={message}
+                  editing={editingMessage}
+                />
                 <ChatMessageAttachments attachments={message.attachments} />
               </div>
             </div>

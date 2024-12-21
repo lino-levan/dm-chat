@@ -19,7 +19,7 @@ import * as $Sidebar_Main from "./islands/Sidebar/Main.tsx";
 import * as $Sidebar_Settings from "./islands/Sidebar/Settings.tsx";
 import * as $Sidebar_Sidebar from "./islands/Sidebar/Sidebar.tsx";
 import * as $Topbar from "./islands/Topbar.tsx";
-import { type Manifest } from "$fresh/server.ts";
+import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {

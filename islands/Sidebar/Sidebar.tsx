@@ -1,7 +1,7 @@
 import IconPlus from "icons/plus.tsx";
 import IconSettings from "icons/settings.tsx";
 import { type Signal, useSignal } from "@preact/signals";
-import { activeChannel, channels } from "@/lib/signals.ts";
+import { activeChannel, channels, replyTo } from "@/lib/signals.ts";
 import { decryptDataAsJson, getCryptoKeyFromString } from "@/lib/crypto.ts";
 import { getChannelId } from "@/lib/crypto.ts";
 import SwipeEvent from "@/lib/touch.ts";
@@ -97,6 +97,7 @@ export function Sidebar({ pushKey }: SidebarProps) {
             } border bg-gray-700 text-green-500 w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-600 transition-all`}
             onClick={() => {
               activeChannel.value = channel.id;
+              replyTo.value = null;
             }}
           >
             {getInitials(channel.name)}

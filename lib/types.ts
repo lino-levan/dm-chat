@@ -15,6 +15,7 @@ export interface Message {
   name: string;
   content: string;
   attachments: Attachment[];
+  reply_to?: string;
 }
 
 export type GatewayEvent = {
