@@ -28,5 +28,5 @@
   "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "preact" },
   "exclude": ["**/_fresh/*"],
   "unstable": ["broadcast-channel"],
-  "nodeModulesDir": "auto"
+  "nodeModulesDir": true
 }
