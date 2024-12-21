@@ -68,6 +68,8 @@ function ChatMessageTooltip(
         <button
           onClick={() => {
             replyTo.value = id;
+            const chatbox = document.getElementById("chatbox")!;
+            chatbox.focus();
           }}
           class="hover:bg-gray-600 p-2 rounded-l"
         >
@@ -350,7 +352,13 @@ export function Chat() {
           currentMessageDate.toDateString() !== prevMessageDate.toDateString();
 
         const messageContent = (
-          <div class="group pl-16 px-2 w-full hover:bg-gray-800">
+          <div
+            class={`group pl-16 px-2 w-full ${
+              replyTo.value === message.id
+                ? "bg-blue-950 hover:bg-blue-900"
+                : "hover:bg-gray-800"
+            }`}
+          >
             <div class="flex flex-col relative">
               <ChatMessageTooltip
                 id={message.id}
@@ -382,7 +390,11 @@ export function Chat() {
           <>
             {showDateSeparator && <DateSeparator date={currentMessageDate} />}
             <div
-              class="flex-grow flex gap-4 pt-1 mt-1 px-2 hover:bg-gray-800 group"
+              class={`flex-grow flex gap-4 pt-1 mt-1 px-2 group ${
+                replyTo.value === message.id
+                  ? "bg-blue-950 hover:bg-blue-900"
+                  : "hover:bg-gray-800"
+              }`}
               id={message.id}
             >
               <img
